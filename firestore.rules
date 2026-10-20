@@ -1,0 +1,99 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net: Default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Connection verification endpoint
+    match /test/{testId} {
+      allow get: if true;
+    }
+
+    // ==========================================
+    // Core Primitive Functions
+    // ==========================================
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // ==========================================
+    // Entity Validation Blueprints
+    // ==========================================
+    function isValidUser(data) {
+      return data.keys().hasAll(['id', 'email', 'displayName', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'email', 'displayName', 'photoURL', 'createdAt', 'updatedAt'])
+        && data.id is string && data.id == request.auth.uid
+        && data.email is string && data.email.size() <= 120
+        && data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 100
+        && (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 500))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidSubject(data) {
+      return data.keys().hasAll(['id', 'userId', 'name', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'userId', 'name', 'code', 'description', 'color', 'icon', 'targetHours', 'createdAt', 'updatedAt'])
+        && isValidId(data.id)
+        && data.userId is string && data.userId == request.auth.uid
+        && data.name is string && data.name.size() >= 2 && data.name.size() <= 60
+        && (!('code' in data) || (data.code is string && data.code.size() <= 20))
+        && (!('description' in data) || (data.description is string && data.description.size() <= 280))
+        && (!('color' in data) || (data.color is string && data.color.size() <= 30))
+        && (!('icon' in data) || (data.icon is string && data.icon.size() <= 30))
+        && (!('targetHours' in data) || (data.targetHours is number && data.targetHours >= 0 && data.targetHours <= 168))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // ==========================================
+    // Collection Rules
+    // ==========================================
+
+    // Users Collection: Private user profile, isolated to owner
+    match /users/{userId} {
+      allow get: if isSignedIn() && isValidId(userId) && request.auth.uid == userId;
+      allow list: if false; // Blanket user listing is forbidden
+      allow create: if isSignedIn() && isValidId(userId) && request.auth.uid == userId && isValidUser(incoming());
+      allow update: if isSignedIn() && isValidId(userId) && request.auth.uid == userId
+        && isValidUser(incoming())
+        && incoming().id == existing().id
+        && incoming().email == existing().email
+        && incoming().createdAt == existing().createdAt
+        && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'updatedAt']);
+      allow delete: if false; // User profiles cannot be deleted directly via client SDK
+    }
+
+    // Subjects Collection: Academic subjects owned by students
+    match /subjects/{subjectId} {
+      allow get: if isSignedIn() && isValidId(subjectId) && resource.data.userId == request.auth.uid;
+      // List operation: Query enforcer guarantees user can only query their own subjects
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(subjectId)
+        && isValidSubject(incoming())
+        && incoming().userId == request.auth.uid;
+      allow update: if isSignedIn() && isValidId(subjectId)
+        && isValidSubject(incoming())
+        && resource.data.userId == request.auth.uid
+        && incoming().userId == existing().userId
+        && incoming().createdAt == existing().createdAt
+        && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'code', 'description', 'color', 'icon', 'targetHours', 'updatedAt']);
+      allow delete: if isSignedIn() && isValidId(subjectId) && resource.data.userId == request.auth.uid;
+    }
+  }
+}

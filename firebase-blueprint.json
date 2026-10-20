@@ -1,0 +1,120 @@
+{
+  "entities": {
+    "users": {
+      "title": "User Profile",
+      "description": "User account profile document storing identity and preferences",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The user's unique Firebase Auth UID"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Primary user email address"
+        },
+        "displayName": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "User full or display name"
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "Avatar photo URL"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last update timestamp"
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "displayName",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "subjects": {
+      "title": "Subject",
+      "description": "Academic course or subject created and owned by a student",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Unique subject document identifier"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the owning student"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 60,
+          "description": "Subject title or name"
+        },
+        "code": {
+          "type": "string",
+          "maxLength": 20,
+          "description": "Course code e.g. BIO101 or CS202"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 280,
+          "description": "Brief description or study goals"
+        },
+        "color": {
+          "type": "string",
+          "maxLength": 30,
+          "description": "Controlled palette theme identifier"
+        },
+        "icon": {
+          "type": "string",
+          "maxLength": 30,
+          "description": "Lucide icon identifier"
+        },
+        "targetHours": {
+          "type": "number",
+          "description": "Target weekly study hours"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "name",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "users",
+      "description": "Stores user account profile. Readable and writable only by the authenticated owner."
+    },
+    "/subjects/{subjectId}": {
+      "schema": "subjects",
+      "description": "Stores subjects owned by students. Each document is restricted strictly to its owner."
+    }
+  }
+}
