@@ -45,7 +45,6 @@ export const AppShell: React.FC<AppShellProps> = ({
       id: 'revision',
       label: 'Revision Room',
       icon: <RotateCcw className="w-4 h-4" />,
-      badge: 'M2',
     },
     {
       id: 'library',

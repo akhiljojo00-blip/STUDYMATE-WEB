@@ -20,6 +20,7 @@ interface SubjectsViewProps {
   onAddSubject: () => void;
   onEditSubject: (subject: Subject) => void;
   onDeleteSubject: (subject: Subject) => void;
+  onSelectSubject: (subject: Subject) => void;
 }
 
 export const SubjectsView: React.FC<SubjectsViewProps> = ({
@@ -29,6 +30,7 @@ export const SubjectsView: React.FC<SubjectsViewProps> = ({
   onAddSubject,
   onEditSubject,
   onDeleteSubject,
+  onSelectSubject,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedColor, setSelectedColor] = useState<SubjectColor | 'all'>('all');
@@ -297,17 +299,23 @@ export const SubjectsView: React.FC<SubjectsViewProps> = ({
                   </div>
 
                   {/* Subject Name */}
-                  <h3 className="font-serif text-xl font-semibold text-[#153225] group-hover:text-[#BA4E29] transition-colors line-clamp-1">
+                  <h3
+                    onClick={() => onSelectSubject(subject)}
+                    className="font-serif text-xl font-semibold text-[#153225] group-hover:text-[#BA4E29] transition-colors line-clamp-1 cursor-pointer"
+                  >
                     {subject.name}
                   </h3>
 
                   {/* Description */}
-                  <p className="text-xs text-[#646E68] mt-1.5 line-clamp-2 leading-relaxed min-h-[2rem]">
+                  <p
+                    onClick={() => onSelectSubject(subject)}
+                    className="text-xs text-[#646E68] mt-1.5 line-clamp-2 leading-relaxed min-h-[2rem] cursor-pointer"
+                  >
                     {subject.description || 'No specific description added yet.'}
                   </p>
                 </div>
 
-                {/* Card Footer: Target Hours & Timestamp */}
+                {/* Card Footer: Target Hours, Explore Link, & Timestamp */}
                 <div className="mt-4 pt-3.5 border-t border-[#F4EFEA] flex items-center justify-between text-xs text-[#88938C]">
                   <div className="flex items-center space-x-1.5 font-medium text-[#333935]">
                     <Clock className="w-3.5 h-3.5 text-[#1C3D2E]" />
@@ -316,11 +324,12 @@ export const SubjectsView: React.FC<SubjectsViewProps> = ({
                     </span>
                   </div>
 
-                  <span className="text-[11px]">
-                    {subject.updatedAt?.toDate
-                      ? new Date(subject.updatedAt.toDate()).toLocaleDateString()
-                      : 'Saved to cloud'}
-                  </span>
+                  <button
+                    onClick={() => onSelectSubject(subject)}
+                    className="text-xs font-semibold text-[#153225] hover:text-[#BA4E29] transition-colors cursor-pointer"
+                  >
+                    Explore Topics &rarr;
+                  </button>
                 </div>
               </div>
             );

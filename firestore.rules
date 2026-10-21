@@ -61,6 +61,77 @@ service cloud.firestore {
         && data.updatedAt is timestamp;
     }
 
+    function isValidTopic(data) {
+      return data.keys().hasAll(['id', 'userId', 'subjectId', 'title', 'status', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'userId', 'subjectId', 'title', 'description', 'status', 'createdAt', 'updatedAt'])
+        && isValidId(data.id)
+        && isValidId(data.subjectId)
+        && data.userId is string && data.userId == request.auth.uid
+        && data.title is string && data.title.size() >= 2 && data.title.size() <= 80
+        && (!('description' in data) || (data.description is string && data.description.size() <= 300))
+        && data.status in ['not_started', 'learning', 'reviewed']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidCard(data) {
+      return data.keys().hasAll(['id', 'userId', 'subjectId', 'topicId', 'front', 'back', 'repetition', 'interval', 'easeFactor', 'lapses', 'dueDate', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'userId', 'subjectId', 'topicId', 'front', 'back', 'repetition', 'interval', 'easeFactor', 'lapses', 'dueDate', 'lastReviewedAt', 'createdAt', 'updatedAt'])
+        && isValidId(data.id)
+        && isValidId(data.subjectId)
+        && isValidId(data.topicId)
+        && data.userId is string && data.userId == request.auth.uid
+        && data.front is string && data.front.size() >= 2 && data.front.size() <= 500
+        && data.back is string && data.back.size() >= 1 && data.back.size() <= 1000
+        && data.repetition is number && data.repetition >= 0
+        && data.interval is number && data.interval >= 0
+        && data.easeFactor is number && data.easeFactor >= 1.3
+        && data.lapses is number && data.lapses >= 0
+        && data.dueDate is string && data.dueDate.size() <= 10
+        && (!('lastReviewedAt' in data) || (data.lastReviewedAt is string && data.lastReviewedAt.size() <= 50))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidReviewLog(data) {
+      return data.keys().hasAll(['id', 'userId', 'cardId', 'subjectId', 'topicId', 'rating', 'quality', 'reviewedAt'])
+        && data.keys().hasOnly(['id', 'userId', 'cardId', 'subjectId', 'topicId', 'frontSnippet', 'rating', 'quality', 'previousRepetition', 'newRepetition', 'previousInterval', 'newInterval', 'previousEaseFactor', 'newEaseFactor', 'reviewedAt'])
+        && isValidId(data.id)
+        && isValidId(data.cardId)
+        && isValidId(data.subjectId)
+        && isValidId(data.topicId)
+        && data.userId is string && data.userId == request.auth.uid
+        && (!('frontSnippet' in data) || (data.frontSnippet is string && data.frontSnippet.size() <= 120))
+        && data.rating in ['again', 'hard', 'good', 'easy']
+        && data.quality is number && (data.quality == 1 || data.quality == 3 || data.quality == 4 || data.quality == 5)
+        && (!('previousRepetition' in data) || data.previousRepetition is number)
+        && (!('newRepetition' in data) || data.newRepetition is number)
+        && (!('previousInterval' in data) || data.previousInterval is number)
+        && (!('newInterval' in data) || data.newInterval is number)
+        && (!('previousEaseFactor' in data) || data.previousEaseFactor is number)
+        && (!('newEaseFactor' in data) || data.newEaseFactor is number)
+        && data.reviewedAt is timestamp;
+    }
+
+    function isValidDocument(data) {
+      return data.keys().hasAll(['id', 'userId', 'title', 'fileType', 'status', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'userId', 'title', 'subjectId', 'topicId', 'fileType', 'fileSize', 'status', 'textContent', 'summary', 'keyPoints', 'wordCount', 'createdAt', 'updatedAt'])
+        && isValidId(data.id)
+        && data.userId is string && data.userId == request.auth.uid
+        && data.title is string && data.title.size() >= 1 && data.title.size() <= 120
+        && (!('subjectId' in data) || (data.subjectId is string && data.subjectId.size() <= 128))
+        && (!('topicId' in data) || (data.topicId is string && data.topicId.size() <= 128))
+        && data.fileType is string && data.fileType.size() <= 60
+        && (!('fileSize' in data) || (data.fileSize is number && data.fileSize >= 0 && data.fileSize <= 10485760))
+        && data.status in ['ready', 'processing', 'error']
+        && (!('textContent' in data) || (data.textContent is string && data.textContent.size() <= 500000))
+        && (!('summary' in data) || (data.summary is string && data.summary.size() <= 10000))
+        && (!('keyPoints' in data) || (data.keyPoints is list && data.keyPoints.size() <= 50))
+        && (!('wordCount' in data) || (data.wordCount is number && data.wordCount >= 0))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
     // ==========================================
     // Collection Rules
     // ==========================================
@@ -76,13 +147,12 @@ service cloud.firestore {
         && incoming().email == existing().email
         && incoming().createdAt == existing().createdAt
         && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'updatedAt']);
-      allow delete: if false; // User profiles cannot be deleted directly via client SDK
+      allow delete: if false;
     }
 
     // Subjects Collection: Academic subjects owned by students
     match /subjects/{subjectId} {
       allow get: if isSignedIn() && isValidId(subjectId) && resource.data.userId == request.auth.uid;
-      // List operation: Query enforcer guarantees user can only query their own subjects
       allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
       allow create: if isSignedIn() && isValidId(subjectId)
         && isValidSubject(incoming())
@@ -94,6 +164,68 @@ service cloud.firestore {
         && incoming().createdAt == existing().createdAt
         && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'code', 'description', 'color', 'icon', 'targetHours', 'updatedAt']);
       allow delete: if isSignedIn() && isValidId(subjectId) && resource.data.userId == request.auth.uid;
+    }
+
+    // Topics Collection: Curriculum units belonging to subjects
+    match /topics/{topicId} {
+      allow get: if isSignedIn() && isValidId(topicId) && resource.data.userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(topicId)
+        && isValidTopic(incoming())
+        && incoming().userId == request.auth.uid;
+      allow update: if isSignedIn() && isValidId(topicId)
+        && isValidTopic(incoming())
+        && resource.data.userId == request.auth.uid
+        && incoming().userId == existing().userId
+        && incoming().subjectId == existing().subjectId
+        && incoming().createdAt == existing().createdAt
+        && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'description', 'status', 'updatedAt']);
+      allow delete: if isSignedIn() && isValidId(topicId) && resource.data.userId == request.auth.uid;
+    }
+
+    // Cards Collection: Active-recall flashcards with SM-2 state
+    match /cards/{cardId} {
+      allow get: if isSignedIn() && isValidId(cardId) && resource.data.userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(cardId)
+        && isValidCard(incoming())
+        && incoming().userId == request.auth.uid;
+      allow update: if isSignedIn() && isValidId(cardId)
+        && isValidCard(incoming())
+        && resource.data.userId == request.auth.uid
+        && incoming().userId == existing().userId
+        && incoming().subjectId == existing().subjectId
+        && incoming().topicId == existing().topicId
+        && incoming().createdAt == existing().createdAt
+        && incoming().diff(existing()).affectedKeys().hasOnly(['front', 'back', 'repetition', 'interval', 'easeFactor', 'lapses', 'dueDate', 'lastReviewedAt', 'updatedAt']);
+      allow delete: if isSignedIn() && isValidId(cardId) && resource.data.userId == request.auth.uid;
+    }
+
+    // Review Logs: Immutable study review events
+    match /review_logs/{logId} {
+      allow get: if isSignedIn() && isValidId(logId) && resource.data.userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(logId)
+        && isValidReviewLog(incoming())
+        && incoming().userId == request.auth.uid;
+      allow update: if false; // Logs are immutable historical records
+      allow delete: if isSignedIn() && isValidId(logId) && resource.data.userId == request.auth.uid;
+    }
+
+    // Documents Collection: Private study materials for Study Library
+    match /documents/{docId} {
+      allow get: if isSignedIn() && isValidId(docId) && resource.data.userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(docId)
+        && isValidDocument(incoming())
+        && incoming().userId == request.auth.uid;
+      allow update: if isSignedIn() && isValidId(docId)
+        && isValidDocument(incoming())
+        && resource.data.userId == request.auth.uid
+        && incoming().userId == existing().userId
+        && incoming().createdAt == existing().createdAt
+        && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'subjectId', 'topicId', 'fileType', 'fileSize', 'status', 'textContent', 'summary', 'keyPoints', 'wordCount', 'updatedAt']);
+      allow delete: if isSignedIn() && isValidId(docId) && resource.data.userId == request.auth.uid;
     }
   }
 }

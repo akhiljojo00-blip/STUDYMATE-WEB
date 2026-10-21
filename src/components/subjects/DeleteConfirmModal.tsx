@@ -1,10 +1,11 @@
 import React from 'react';
 import { AlertTriangle, Trash2 } from 'lucide-react';
-import { Subject } from '../../types/index.ts';
 
 interface DeleteConfirmModalProps {
   isOpen: boolean;
-  subject: Subject | null;
+  title: string;
+  description: string;
+  badge?: string;
   onClose: () => void;
   onConfirm: () => Promise<void>;
   deleting: boolean;
@@ -12,12 +13,14 @@ interface DeleteConfirmModalProps {
 
 export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
   isOpen,
-  subject,
+  title,
+  description,
+  badge,
   onClose,
   onConfirm,
   deleting,
 }) => {
-  if (!isOpen || !subject) return null;
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-[#141715]/50 backdrop-blur-xs flex items-center justify-center p-4">
@@ -35,16 +38,16 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
           id="delete-dialog-title"
           className="font-serif text-xl font-semibold text-[#153225]"
         >
-          Delete "{subject.name}"?
+          {title}
         </h3>
 
         <p className="text-xs sm:text-sm text-[#646E68] mt-2 leading-relaxed">
-          Are you sure you want to remove this subject? All scheduled revision items, target study allocations, and associated syllabus details for this subject will be permanently deleted from your private Cloud Firestore.
+          {description}
         </p>
 
-        {subject.code && (
+        {badge && (
           <div className="mt-3 inline-block px-2.5 py-1 rounded-md bg-[#F4EFEA] border border-[#EAE3D9] text-xs font-mono text-[#153225]">
-            Course Code: {subject.code}
+            {badge}
           </div>
         )}
 
@@ -64,7 +67,7 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
             className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-[#BA4E29] hover:bg-[#9B3D1E] text-xs font-medium text-[#FAF8F5] transition-colors shadow-xs cursor-pointer disabled:opacity-60"
           >
             <Trash2 className="w-3.5 h-3.5" />
-            <span>{deleting ? 'Deleting...' : 'Delete Subject'}</span>
+            <span>{deleting ? 'Deleting...' : 'Confirm Deletion'}</span>
           </button>
         </div>
       </div>

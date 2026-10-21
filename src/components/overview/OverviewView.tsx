@@ -10,16 +10,21 @@ import {
   HelpCircle,
   RotateCcw,
   Check,
+  Brain,
 } from 'lucide-react';
-import { Subject, DailyTask } from '../../types/index.ts';
+import { Subject, DailyTask, Flashcard } from '../../types/index.ts';
 import { calculateStudyMetrics, getGreeting, formatStudyDate } from '../../utils/dashboard.ts';
+import { categorizeCards } from '../../utils/sm2.ts';
 import { COLOR_SCHEMES, renderSubjectIcon } from '../../utils/palette.ts';
 
 interface OverviewViewProps {
   displayName: string;
   subjects: Subject[];
+  cards: Flashcard[];
   loading: boolean;
   onNavigateToSubjects: () => void;
+  onNavigateToRevision: () => void;
+  onSelectSubject: (subject: Subject) => void;
   onAddSubject: () => void;
 }
 
@@ -47,8 +52,11 @@ const INITIAL_TASKS: DailyTask[] = [
 export const OverviewView: React.FC<OverviewViewProps> = ({
   displayName,
   subjects,
+  cards,
   loading,
   onNavigateToSubjects,
+  onNavigateToRevision,
+  onSelectSubject,
   onAddSubject,
 }) => {
   const [tasks, setTasks] = useState<DailyTask[]>(INITIAL_TASKS);
@@ -58,6 +66,8 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
   const metrics = calculateStudyMetrics(subjects);
   const greeting = getGreeting();
   const currentDate = formatStudyDate();
+
+  const categorized = categorizeCards(cards);
 
   const toggleTask = (taskId: string) => {
     setTasks((prev) =>
@@ -159,18 +169,23 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
           </p>
         </div>
 
-        {/* Metric 4: Spaced Revision Engine */}
-        <div className="bg-[#FFFFFF] border border-[#D8CEBF] rounded-2xl p-5 shadow-2xs">
+        {/* Metric 4: Spaced Revision Queue */}
+        <div
+          onClick={onNavigateToRevision}
+          className="bg-[#FFFFFF] border border-[#D8CEBF] hover:border-[#153225] rounded-2xl p-5 shadow-2xs cursor-pointer transition-all"
+        >
           <span className="text-xs font-medium text-[#646E68] block">
-            Spaced Revision Engine
+            Due for Revision
           </span>
           <div className="mt-2 flex items-baseline space-x-2">
-            <span className="font-serif text-xl font-semibold text-[#153225]">
-              Milestone 2
+            <span className="font-serif text-3xl font-semibold text-[#153225]">
+              {loading ? '-' : categorized.allDue.length}
             </span>
+            <span className="text-xs text-[#BA4E29] font-medium">cards due</span>
           </div>
-          <p className="text-[11px] text-[#88938C] mt-2 border-t border-[#F4EFEA] pt-2">
-            Scheduled retrieval drills activate next
+          <p className="text-[11px] text-[#153225] mt-2 border-t border-[#F4EFEA] pt-2 font-medium flex items-center justify-between">
+            <span>SM-2 Spaced Retrieval</span>
+            <span>Review &rarr;</span>
           </p>
         </div>
       </div>
@@ -211,7 +226,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                 onClick={onAddSubject}
                 className="mt-5 inline-flex items-center space-x-2 px-4 py-2 rounded-xl bg-[#153225] hover:bg-[#1C3D2E] text-[#FAF8F5] text-xs font-medium transition-colors cursor-pointer"
               >
-                <Plus className="w-3.5 h-3.5" />
+                <Plus className="w-4 h-4" />
                 <span>Create First Subject</span>
               </button>
             </div>
@@ -223,10 +238,12 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
               {subjects.slice(0, 4).map((sub) => {
                 const scheme =
                   COLOR_SCHEMES[sub.color || 'forest'] || COLOR_SCHEMES.forest;
+                const subCardCount = cards.filter((c) => c.subjectId === sub.id).length;
+
                 return (
                   <div
                     key={sub.id}
-                    onClick={onNavigateToSubjects}
+                    onClick={() => onSelectSubject(sub)}
                     className="bg-[#FFFFFF] border border-[#D8CEBF] hover:border-[#153225] rounded-xl p-4 shadow-2xs hover:shadow-xs transition-all cursor-pointer flex flex-col justify-between"
                   >
                     <div>
@@ -257,8 +274,8 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                         <Clock className="w-3 h-3 text-[#1C3D2E]" />
                         <span>{sub.targetHours || 0} hrs/wk</span>
                       </span>
-                      <span className="text-[11px] text-[#153225] underline underline-offset-2">
-                        Manage &rarr;
+                      <span className="text-[11px] text-[#153225] font-medium underline underline-offset-2">
+                        {subCardCount} card{subCardCount !== 1 ? 's' : ''} &bull; Topics &rarr;
                       </span>
                     </div>
                   </div>
@@ -345,7 +362,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
         </div>
       </div>
 
-      {/* Revision Section: Honest Empty State */}
+      {/* Revision Section Banner */}
       <div className="bg-[#FFFFFF] border border-[#D8CEBF] rounded-2xl p-6 shadow-2xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1">
@@ -354,19 +371,29 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
               <h3 className="font-serif text-xl font-semibold text-[#153225]">
                 Revision Room
               </h3>
-              <span className="text-[10px] font-mono uppercase bg-[#FBE4DD] text-[#9B3D1E] px-1.5 py-0.5 rounded-sm">
-                Milestone 2
+              <span className="text-[10px] font-mono uppercase bg-[#E1EFE7] text-[#153225] px-1.5 py-0.5 rounded-sm font-semibold">
+                SM-2 Active
               </span>
             </div>
             <p className="text-xs sm:text-sm text-[#646E68] max-w-2xl leading-relaxed">
-              No active recall drills are due today. The Revision Room will automatically compute spaced retrieval intervals, schedule active recall prompts, and analyze concept gaps once study materials are attached in Milestone 2.
+              {categorized.allDue.length > 0
+                ? `You have ${categorized.allDue.length} flashcard${
+                    categorized.allDue.length > 1 ? 's' : ''
+                  } ready for spaced repetition review today (${categorized.overdue.length} overdue, ${
+                    categorized.dueToday.length
+                  } due today, ${categorized.newCards.length} new).`
+                : 'All caught up! No active recall drills due today. Add flashcards inside your subject topics to schedule upcoming reviews.'}
             </p>
           </div>
 
           <div className="shrink-0">
-            <span className="text-xs text-[#88938C] italic bg-[#F4EFEA] px-3 py-1.5 rounded-lg border border-[#EAE3D9]">
-              Milestone 1 foundation ready
-            </span>
+            <button
+              onClick={onNavigateToRevision}
+              className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-[#153225] hover:bg-[#1C3D2E] text-[#FAF8F5] text-xs font-medium transition-colors shadow-xs cursor-pointer"
+            >
+              <span>Open Revision Room</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
       </div>

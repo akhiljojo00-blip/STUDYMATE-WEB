@@ -1,4 +1,14 @@
-import type { SubjectColor, SubjectFormData, SubjectIconName, SubjectValidationErrors } from '../types/index.ts';
+import type {
+  SubjectColor,
+  SubjectFormData,
+  SubjectIconName,
+  SubjectValidationErrors,
+  TopicFormData,
+  TopicStatus,
+  TopicValidationErrors,
+  FlashcardFormData,
+  FlashcardValidationErrors,
+} from '../types/index.ts';
 
 export const ALLOWED_COLORS: SubjectColor[] = [
   'forest',
@@ -22,6 +32,12 @@ export const ALLOWED_ICONS: SubjectIconName[] = [
   'Landmark',
   'Calculator',
   'Globe',
+];
+
+export const ALLOWED_TOPIC_STATUSES: TopicStatus[] = [
+  'not_started',
+  'learning',
+  'reviewed',
 ];
 
 export function validateSubjectInput(input: Partial<SubjectFormData>): {
@@ -86,5 +102,77 @@ export function validateSubjectInput(input: Partial<SubjectFormData>): {
     isValid: Object.keys(errors).length === 0,
     errors,
     sanitized,
+  };
+}
+
+export function validateTopicInput(input: Partial<TopicFormData>): {
+  isValid: boolean;
+  errors: TopicValidationErrors;
+  sanitized: TopicFormData;
+} {
+  const errors: TopicValidationErrors = {};
+  const rawTitle = (input.title ?? '').trim();
+  const rawDesc = (input.description ?? '').trim();
+  const rawStatus = input.status;
+
+  if (!rawTitle) {
+    errors.title = 'Topic title is required.';
+  } else if (rawTitle.length < 2) {
+    errors.title = 'Topic title must be at least 2 characters.';
+  } else if (rawTitle.length > 80) {
+    errors.title = 'Topic title cannot exceed 80 characters.';
+  }
+
+  if (rawDesc.length > 300) {
+    errors.description = 'Description cannot exceed 300 characters.';
+  }
+
+  const status: TopicStatus = ALLOWED_TOPIC_STATUSES.includes(rawStatus as TopicStatus)
+    ? (rawStatus as TopicStatus)
+    : 'not_started';
+
+  return {
+    isValid: Object.keys(errors).length === 0,
+    errors,
+    sanitized: {
+      title: rawTitle,
+      description: rawDesc,
+      status,
+    },
+  };
+}
+
+export function validateFlashcardInput(input: Partial<FlashcardFormData>): {
+  isValid: boolean;
+  errors: FlashcardValidationErrors;
+  sanitized: FlashcardFormData;
+} {
+  const errors: FlashcardValidationErrors = {};
+  const rawFront = (input.front ?? '').trim();
+  const rawBack = (input.back ?? '').trim();
+
+  if (!rawFront) {
+    errors.front = 'Question or prompt is required.';
+  } else if (rawFront.length < 2) {
+    errors.front = 'Prompt must be at least 2 characters.';
+  } else if (rawFront.length > 500) {
+    errors.front = 'Prompt cannot exceed 500 characters.';
+  }
+
+  if (!rawBack) {
+    errors.back = 'Answer or explanation is required.';
+  } else if (rawBack.length < 1) {
+    errors.back = 'Answer cannot be empty.';
+  } else if (rawBack.length > 1000) {
+    errors.back = 'Answer cannot exceed 1000 characters.';
+  }
+
+  return {
+    isValid: Object.keys(errors).length === 0,
+    errors,
+    sanitized: {
+      front: rawFront,
+      back: rawBack,
+    },
   };
 }

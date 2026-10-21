@@ -105,6 +105,315 @@
         "createdAt",
         "updatedAt"
       ]
+    },
+    "topics": {
+      "title": "Topic",
+      "description": "Curriculum unit or topic belonging to a subject",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Unique topic document identifier"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the owning student"
+        },
+        "subjectId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Parent subject identifier"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80,
+          "description": "Topic title"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 300,
+          "description": "Topic description or core concepts"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["not_started", "learning", "reviewed"],
+          "description": "Student progress status on this topic"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "subjectId",
+        "title",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "cards": {
+      "title": "Flashcard",
+      "description": "Active-recall flashcard scheduled via SM-2",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Unique card document identifier"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the owning student"
+        },
+        "subjectId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Parent subject identifier"
+        },
+        "topicId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Parent topic identifier"
+        },
+        "front": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 500,
+          "description": "Question or prompt to recall"
+        },
+        "back": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000,
+          "description": "Answer or explanation revealed upon recall attempt"
+        },
+        "repetition": {
+          "type": "number",
+          "description": "Consecutive successful recall reviews"
+        },
+        "interval": {
+          "type": "number",
+          "description": "Interval in days until next review"
+        },
+        "easeFactor": {
+          "type": "number",
+          "description": "SM-2 difficulty modifier (min 1.3)"
+        },
+        "lapses": {
+          "type": "number",
+          "description": "Total count of failed recall attempts"
+        },
+        "dueDate": {
+          "type": "string",
+          "maxLength": 10,
+          "description": "Next scheduled review date in YYYY-MM-DD"
+        },
+        "lastReviewedAt": {
+          "type": "string",
+          "description": "ISO timestamp of last review session"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "subjectId",
+        "topicId",
+        "front",
+        "back",
+        "repetition",
+        "interval",
+        "easeFactor",
+        "lapses",
+        "dueDate",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "review_logs": {
+      "title": "Review Log",
+      "description": "Immutable log of an active recall review event",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Unique review log identifier"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID of student"
+        },
+        "cardId": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "Target flashcard identifier"
+        },
+        "subjectId": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "Subject identifier"
+        },
+        "topicId": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "Topic identifier"
+        },
+        "rating": {
+          "type": "string",
+          "enum": ["again", "hard", "good", "easy"],
+          "description": "Student rating of recall difficulty"
+        },
+        "quality": {
+          "type": "number",
+          "description": "SM-2 quality scale (1, 3, 4, 5)"
+        },
+        "previousRepetition": {
+          "type": "number",
+          "description": "Repetition count before review"
+        },
+        "newRepetition": {
+          "type": "number",
+          "description": "Repetition count after review"
+        },
+        "previousInterval": {
+          "type": "number",
+          "description": "Interval before review"
+        },
+        "newInterval": {
+          "type": "number",
+          "description": "Interval after review"
+        },
+        "previousEaseFactor": {
+          "type": "number",
+          "description": "Ease factor before review"
+        },
+        "newEaseFactor": {
+          "type": "number",
+          "description": "Ease factor after review"
+        },
+        "reviewedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when review occurred"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "cardId",
+        "subjectId",
+        "topicId",
+        "rating",
+        "quality",
+        "reviewedAt"
+      ]
+    },
+    "documents": {
+      "title": "Study Document",
+      "description": "Student-uploaded study material for Study Library and grounded AI tutoring",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Unique document identifier"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID of owning student"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120,
+          "description": "Document title"
+        },
+        "subjectId": {
+          "type": "string",
+          "description": "Optional associated subject ID"
+        },
+        "topicId": {
+          "type": "string",
+          "description": "Optional associated topic ID"
+        },
+        "fileType": {
+          "type": "string",
+          "description": "File MIME type or extension"
+        },
+        "fileSize": {
+          "type": "number",
+          "description": "File size in bytes"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["ready", "processing", "error"],
+          "description": "Extraction and processing status"
+        },
+        "textContent": {
+          "type": "string",
+          "description": "Extracted text content"
+        },
+        "summary": {
+          "type": "string",
+          "description": "Key conceptual summary"
+        },
+        "keyPoints": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Extracted key points"
+        },
+        "wordCount": {
+          "type": "number",
+          "description": "Calculated word count"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last update timestamp"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "title",
+        "fileType",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
     }
   },
   "firestore": {
@@ -115,6 +424,22 @@
     "/subjects/{subjectId}": {
       "schema": "subjects",
       "description": "Stores subjects owned by students. Each document is restricted strictly to its owner."
+    },
+    "/topics/{topicId}": {
+      "schema": "topics",
+      "description": "Stores syllabus topics owned by students and associated with a subject."
+    },
+    "/cards/{cardId}": {
+      "schema": "cards",
+      "description": "Stores active-recall flashcards with SM-2 spaced repetition state."
+    },
+    "/review_logs/{logId}": {
+      "schema": "review_logs",
+      "description": "Immutable review history logs for mistake tracking and spaced repetition analysis."
+    },
+    "/documents/{docId}": {
+      "schema": "documents",
+      "description": "Stores student study documents and extracted text for grounded study."
     }
   }
 }
